@@ -30,18 +30,35 @@ export function createSendTeamsMessageViaWebhookAction(options: { config: Config
     },
     async handler(ctx) {
       const webhookUrl =
-        config.getOptionalString('ms-teams.webhookUrl') ?? ctx.input.webhookUrl;
+        ctx.input.webhookUrl ?? config.getOptionalString('ms-teams.webhookUrl');
 
       if (!webhookUrl) {
         throw new InputError(
-          'Webhook URL is not specified in either the app-config or the action input. This must be specified in at least one place in order to send a message',
+          'Webhook URL is not specified in either the action input or the app-config. This must be specified in at least one place in order to send a message',
         );
       }
 
-      const body = { text: ctx.input.message };
-      const result = await axios.post(webhookUrl, body);
+      const body = {
+        type: "message",
+        attachments: [
+          {
+            contentType: "application/vnd.microsoft.card.adaptive",
+            contentUrl: null,
+            content: {
+              type: "AdaptiveCard",
+              $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
+              version: "1.4",
+              body: [
+                { type: "TextBlock", text: ctx.input.message, wrap: true }
+              ]
+            }
+          }
+        ]
+      };
 
-      if (result.status !== 200) {
+      const result = await axios.post(webhookUrl, body);
+      const isSuccess = result.status === 200 || result.status === 202;
+      if (!isSuccess) {
         ctx.logger.error(
           `Something went wrong while trying to send a request to the Teams webhook URL - StatusCode ${result.status}`,
         );
