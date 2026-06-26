@@ -39,21 +39,10 @@ export function createSendTeamsMessageViaWebhookAction(options: { config: Config
       }
 
       const body = {
-        type: "message",
-        attachments: [
-          {
-            contentType: "application/vnd.microsoft.card.adaptive",
-            contentUrl: null,
-            content: {
-              type: "AdaptiveCard",
-              $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
-              version: "1.4",
-              body: [
-                { type: "TextBlock", text: ctx.input.message, wrap: true }
-              ]
-            }
-          }
-        ]
+        "@type": "MessageCard",
+        "@context": "http://schema.org",
+        "summary": "Backstage",
+        "text": ctx.input.message ?? "",
       };
 
       const result = await axios.post(webhookUrl, body);

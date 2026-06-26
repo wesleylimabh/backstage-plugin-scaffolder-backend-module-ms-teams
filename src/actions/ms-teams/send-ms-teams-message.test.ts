@@ -124,13 +124,10 @@ describe('ms-teams:sendMessage', () => {
     expect(mockedAxios.post).toHaveBeenCalledWith(
       'https://specific-url.com',
       expect.objectContaining({
-        attachments: [
-          {
-            contentType: 'application/vnd.microsoft.card.adaptive',
-            contentUrl: null,
-            content: expect.objectContaining({ body: [{ type: 'TextBlock', text: 'Hello, Teams!', wrap: true }] }),
-          },
-        ],
+        '@type': "MessageCard",
+        '@context': 'http://schema.org',
+        summary: 'Backstage',
+        text: 'Hello, Teams!',
       }),
     );
   });
