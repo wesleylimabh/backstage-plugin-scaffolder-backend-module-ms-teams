@@ -42,7 +42,7 @@ export function createSendTeamsMessageViaWebhookAction(options: { config: Config
         "@type": "MessageCard",
         "@context": "http://schema.org",
         "summary": "Backstage",
-        "text": ctx.input.message ?? "",
+        "text": ctx.input.message,
       };
 
       const result = await axios.post(webhookUrl, body);
