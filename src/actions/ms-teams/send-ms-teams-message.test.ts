@@ -132,7 +132,7 @@ describe('ms-teams:sendMessage', () => {
     );
   });
 
-  it('should throw an error if result.status is not 200', async () => {
+  it('should throw an error if result.status is neither 200 nor 202', async () => {
     const action = createSendTeamsMessageViaWebhookAction({
       config: {
         getOptionalString: (_key: string) => 'https://example-teams.com',
@@ -155,26 +155,34 @@ describe('ms-teams:sendMessage', () => {
     );
   });
 
-  it('should throw an error if result.status is not 202', async () => {
+  it('should treat result.status 202 as a successful response', async () => {
     const action = createSendTeamsMessageViaWebhookAction({
       config: {
         getOptionalString: (_key: string) => 'https://example-teams.com',
       } as Config,
     });
 
-    mockedAxios.post.mockResolvedValue({ status: 400 });
+    mockedAxios.post.mockResolvedValue({ status: 202 });
 
     await expect(
       action.handler(
         createMockActionContext({
           input: {
             message: 'Hello, Teams!',
-            webhookUrl: 'https://input-failure.com',
+            webhookUrl: 'https://success-202.com',
           },
         }),
       ),
-    ).rejects.toThrow(
-      'Something went wrong while trying to send a request to the Teams webhook URL - StatusCode 400',
+    ).resolves.toBeUndefined();
+
+    expect(mockedAxios.post).toHaveBeenCalledWith(
+      'https://success-202.com',
+      expect.objectContaining({
+        '@type': 'MessageCard',
+        '@context': 'http://schema.org',
+        summary: 'Backstage',
+        text: 'Hello, Teams!',
+      }),
     );
   });
 });
