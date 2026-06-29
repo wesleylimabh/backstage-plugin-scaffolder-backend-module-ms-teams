@@ -1,9 +1,16 @@
 import { createSendTeamsMessageViaWebhookAction } from './send-ms-teams-message';
 import { createMockActionContext } from '@backstage/plugin-scaffolder-node-test-utils';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { Config } from '@backstage/config';
 
-jest.mock('axios');
+jest.mock('axios', () => {
+  const originalAxios = jest.requireActual('axios');
+  return {
+    ...originalAxios,
+    post: jest.fn() // Only overwrite the post method
+  };
+});
+
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('ms-teams:sendMessage', () => {
@@ -132,14 +139,28 @@ describe('ms-teams:sendMessage', () => {
     );
   });
 
-  it('should throw an error if result.status is neither 200 nor 202', async () => {
+  it('should throw an error when the webhook request fails', async () => {
     const action = createSendTeamsMessageViaWebhookAction({
       config: {
         getOptionalString: (_key: string) => 'https://example-teams.com',
       } as Config,
     });
 
-    mockedAxios.post.mockResolvedValue({ status: 400 });
+    mockedAxios.post.mockRejectedValue(
+      new AxiosError(
+        'Request failed with status code 400',
+        'ERR_BAD_REQUEST',
+        undefined,
+        undefined,
+        {
+          status: 400,
+          statusText: 'Bad Request',
+          data: 'Bad Request',
+          headers: {},
+          config: {} as never,
+        },
+      ),
+    );
 
     await expect(
       action.handler(

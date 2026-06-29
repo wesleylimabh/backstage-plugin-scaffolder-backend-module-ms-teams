@@ -45,18 +45,22 @@ export function createSendTeamsMessageViaWebhookAction(options: { config: Config
         "text": ctx.input.message,
       };
 
-      const result = await axios.post(webhookUrl, body);
-      const isSuccess = result.status === 200 || result.status === 202;
-      if (!isSuccess) {
-        ctx.logger.error(
-          `Something went wrong while trying to send a request to the Teams webhook URL - StatusCode ${result.status}`,
-        );
-        ctx.logger.debug(`Response body: ${result.data}`);
-        ctx.logger.debug(`Webhook URL: ${webhookUrl}`);
-        ctx.logger.debug(`Input message: ${ctx.input.message}`);
-        throw new Error(
-          `Something went wrong while trying to send a request to the Teams webhook URL - StatusCode ${result.status}`,
-        );
+      try {
+        await axios.post(webhookUrl, body);
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          const statusCode = error.response?.status ?? 'unknown';
+          ctx.logger.error(
+            `Something went wrong while trying to send a request to the Teams webhook URL - StatusCode ${statusCode}`,
+          );
+          ctx.logger.debug(`Response body: ${error.response?.data}`);
+          ctx.logger.debug(`Webhook URL: ${webhookUrl}`);
+          ctx.logger.debug(`Input message: ${ctx.input.message}`);
+          throw new Error(
+            `Something went wrong while trying to send a request to the Teams webhook URL - StatusCode ${statusCode}`,
+          );
+        }
+        throw error;
       }
     },
   });
